@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="CORES ($CORES): 100 reactor cores, one pool, fees only. The core in range goes critical and every swap there pays it the fee.">
+<meta name="theme-color" content="#060a0d">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 13 13' shape-rendering='crispEdges'%3E%3Crect width='13' height='13' fill='%23071018'/%3E%3Ccircle cx='6.5' cy='6.5' r='4.6' fill='none' stroke='%233ad7ff' stroke-width='1.2'/%3E%3Crect x='5' y='5' width='3' height='3' fill='%233ad7ff'/%3E%3Crect x='6' y='0' width='1' height='2' fill='%23ffb627'/%3E%3Crect x='6' y='11' width='1' height='2' fill='%23ffb627'/%3E%3Crect x='0' y='6' width='2' height='1' fill='%23ffb627'/%3E%3Crect x='11' y='6' width='2' height='1' fill='%23ffb627'/%3E%3C/svg%3E">
+<title>CORES</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+<style>
+/* layout: a reactor control room. the hero is a live isometric hall of 100 reactor cores (canvas); a steel control panel docks bottom-left over it. below, the floor map, inspector, logs, readme and token sit on riveted dark panels */
+:root{
+  color-scheme:dark;
+  --bg:#060a0d;--p1:#0c1318;--p2:#111b22;--line:#1c2a33;--line2:#2a3d49;
+  --ink:#d8f2ff;--mut:#86a3b3;--dim:#557080;
+  --blue:#3ad7ff;--amber:#ffb627;--green:#4dff9a;--red:#ff4d5e;--teal:#1fb5a6;
+  --disp:'Pixelify Sans',system-ui,sans-serif;--mono:'VT323',ui-monospace,monospace;--pix:'Silkscreen',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--disp);overflow-x:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+.mono{font-family:var(--mono)}
+/* nav */
+nav.top{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;gap:12px;padding:10px 16px;background:linear-gradient(180deg,rgba(6,10,13,.96),rgba(6,10,13,.82));border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;letter-spacing:.22em}
+.logo svg{display:block}
+.logo small{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--dim)}
+.navl{display:flex;gap:6px;margin-left:8px}
+.chipb{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--line2);background:var(--p1);color:var(--mut);border-radius:3px;transition:.15s}
+.chipb:hover{color:var(--ink);border-color:var(--blue)}
+.sp{flex:1}
+.cta{font-family:var(--disp);font-weight:700;font-size:13.5px;padding:8px 14px;border-radius:3px;background:var(--blue);color:#02161d;box-shadow:0 0 0 1px rgba(255,255,255,.2) inset,0 0 18px rgba(58,215,255,.3);transition:.15s}
+.cta:hover{filter:brightness(1.1)}
+.cta.amb{background:var(--amber);color:#1d1200;box-shadow:0 0 18px rgba(255,182,39,.25)}
+.cta.gh{background:transparent;color:var(--ink);border:1px solid var(--line2);box-shadow:none}
+.cta.gh:hover{border-color:var(--blue)}
+.cta.sm{font-size:12px;padding:6px 10px}
+.xb{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line2);border-radius:3px;color:var(--mut);background:var(--p1)}
+.xb:hover{color:var(--ink);border-color:var(--blue)}
+.ticker{position:fixed;top:55px;left:0;right:0;z-index:39;height:24px;overflow:hidden;background:#04070a;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12.5px;color:var(--amber);white-space:nowrap}
+.ticker div{display:inline-block;padding:4px 0;animation:tk 40s linear infinite}
+.ticker span{margin:0 26px}.ticker b{color:var(--blue);font-weight:400}
+@keyframes tk{to{transform:translateX(-50%)}}
+/* hero */
+.hero{position:relative;height:100vh;min-height:640px}
+#hall{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+.cam{position:absolute;right:16px;top:92px;z-index:3;background:rgba(4,8,11,.7);border:1px solid var(--line);padding:8px 12px;border-radius:3px;text-align:right;font-family:var(--mono);font-size:14px;line-height:1.5;color:#fff;text-shadow:0 0 8px #000;pointer-events:none}
+.cam b{color:var(--red);font-weight:400;animation:bl 1.2s steps(1) infinite}
+@keyframes bl{50%{opacity:0}}
+.htip{position:absolute;z-index:5;pointer-events:none;background:rgba(6,10,13,.92);border:1px solid var(--line2);border-left:2px solid var(--blue);padding:8px 10px;font-family:var(--mono);font-size:12px;opacity:0;transition:opacity .1s;min-width:150px}
+.htip.on{opacity:1}.htip b{font-family:var(--disp);font-size:14px;color:var(--blue)}
+.htip div{display:flex;justify-content:space-between;gap:12px;color:var(--mut)}
+/* panels */
+.panel{background:linear-gradient(180deg,#0f1820,#0a1116);border:1px solid var(--line2);border-radius:4px;position:relative;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.panel::before,.panel::after{content:"";position:absolute;width:6px;height:6px;border-radius:50%;background:#2c3e49;box-shadow:inset 1px 1px 0 #4a6170;top:7px}
+.panel::before{left:7px}.panel::after{right:7px}
+.ph{display:flex;align-items:center;gap:10px;padding:9px 14px 9px 20px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12.5px;color:var(--mut)}
+.ph .tt{color:var(--ink)}
+.ph .led{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.ph .led.a{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.ph .sp{flex:1}
+.ph .tag{font-size:10.5px;padding:2px 6px;border:1px solid var(--line2);border-radius:2px;color:var(--dim)}
+.pb{padding:16px}
+.console{position:absolute;left:16px;bottom:16px;z-index:6;width:min(560px,calc(100% - 32px))}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;color:var(--blue);margin-bottom:8px}
+.console h1{font-size:clamp(30px,3.6vw,44px);line-height:1.02;font-weight:700;letter-spacing:.02em;margin-bottom:10px}
+.console h1 em{font-style:normal;color:var(--amber);text-shadow:0 0 24px rgba(255,182,39,.35)}
+.console p{font-size:14.5px;line-height:1.55;color:var(--mut);margin-bottom:14px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px}
+.stat{background:#04080b;border:1px solid var(--line);border-radius:3px;padding:8px 10px;font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:.08em}
+.stat b{display:block;font-family:var(--disp);font-size:20px;color:var(--green);letter-spacing:.02em;margin-top:2px;text-shadow:0 0 12px rgba(77,255,154,.3)}
+.stat b.bl{color:var(--blue);text-shadow:0 0 12px rgba(58,215,255,.3)}
+/* sections */
+section.sec{max-width:1240px;margin:0 auto;padding:70px 16px 0}
+.sh .eyebrow{color:var(--amber)}
+.sh h2{font-size:clamp(26px,3vw,36px);font-weight:700;margin-bottom:8px}
+.sh p{color:var(--mut);font-size:15px;line-height:1.55;max-width:620px;margin-bottom:22px}
+.floor{display:grid;grid-template-columns:250px 1fr 320px;gap:14px;align-items:start}
+.kv{font-family:var(--mono);font-size:12.5px}
+.kv div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)}
+.kv div span:first-child{color:var(--dim)}
+.kv h4{font-family:var(--disp);font-size:12px;letter-spacing:.14em;color:var(--blue);margin:12px 0 4px}
+.hash{font-family:var(--mono);font-size:11.5px;color:var(--amber);word-break:break-all;background:#04080b;border:1px solid var(--line);padding:8px;margin-top:6px}
+.filt{display:flex;gap:6px;padding:10px 14px 0}
+.filt button{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--line2);border-radius:2px;color:var(--mut)}
+.filt button.on{background:var(--blue);color:#02161d;border-color:var(--blue)}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;padding:12px 14px}
+.cell{aspect-ratio:1;border:1px solid var(--line2);border-radius:3px;background:#070d11;position:relative;cursor:pointer;transition:transform .12s,border-color .12s;overflow:hidden}
+.cell:hover{transform:translateY(-2px);border-color:var(--ink)}
+.cell canvas{width:100%;height:100%;display:block}
+.cell span{position:absolute;left:3px;bottom:2px;font-family:var(--mono);font-size:9.5px;color:var(--dim)}
+.cell.sel{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber)}
+.cell.run{border-color:var(--green);box-shadow:0 0 14px rgba(77,255,154,.45),0 0 0 1px var(--green)}
+.cell.run::after{content:"";position:absolute;inset:0;background:radial-gradient(circle,rgba(77,255,154,.25),transparent 70%);animation:pl 1.2s ease-in-out infinite}
+@keyframes pl{50%{opacity:.35}}
+.cell.un{opacity:.35}
+.cell .flag{position:absolute;right:2px;top:2px;width:12px;height:12px;background:var(--amber);color:#1d1200;font-size:9px;font-weight:700;display:grid;place-items:center;border-radius:2px}
+.cell .mine{position:absolute;left:2px;top:2px;width:7px;height:7px;border-radius:50%;background:var(--blue);box-shadow:0 0 6px var(--blue)}
+.cell.dim{opacity:.12}
+.legend{display:flex;flex-wrap:wrap;gap:12px;padding:0 14px 10px;font-family:var(--mono);font-size:11px;color:var(--mut)}
+.legend i{display:inline-block;width:10px;height:10px;border:1px solid;margin-right:5px;vertical-align:-1px}
+.liq{padding:0 14px 14px}
+.liq .bar{display:flex;height:34px;align-items:flex-end;gap:1px;background:#04080b;border:1px solid var(--line);padding:3px;position:relative}
+.liq .bar i{flex:1;background:var(--teal);min-height:2px;transition:height .4s}
+.liq .bar i.c{background:#8a6516}.liq .bar i.r{background:var(--green);box-shadow:0 0 8px var(--green)}
+.liq .ax{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:4px}
+#insC{width:100%;height:170px;display:block;background:#04080b;border:1px solid var(--line);border-radius:3px}
+.ihd{display:flex;align-items:center;justify-content:space-between;margin:12px 0 8px}
+.ihd b{font-size:22px;letter-spacing:.08em}
+.cls{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:2px;background:var(--amber);color:#1d1200}
+.bytes{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-bottom:10px}
+.bytes div{background:#04080b;border:1px solid var(--line);border-radius:2px;text-align:center;padding:4px 0;font-family:var(--mono)}
+.bytes small{display:block;font-size:8.5px;color:var(--dim);letter-spacing:.06em}
+.bytes b{font-size:13px;color:var(--green);font-weight:400}
+.bytes div.flip{animation:fl .8s ease}
+@keyframes fl{0%,40%{background:var(--amber);color:#000}}
+.ibtns{display:flex;gap:8px;margin-top:12px}.ibtns button{flex:1}
+/* logs */
+.logs{display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px}
+th{text-align:left;color:var(--dim);font-weight:400;padding:7px 12px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.08em}
+td{padding:6px 12px;border-bottom:1px solid rgba(28,42,51,.6);white-space:nowrap}
+tr.nw{animation:nw 1.4s ease}
+@keyframes nw{0%{background:rgba(58,215,255,.18)}}
+.buy{color:var(--green)}.sell{color:var(--red)}
+.tscroll{max-height:440px;overflow:auto}
+.flips{font-family:var(--mono);font-size:12.5px;max-height:440px;overflow:auto;padding:6px 0}
+.flips div{padding:6px 14px;border-bottom:1px solid rgba(28,42,51,.6)}
+.flips .l{color:var(--amber)}.flips .c{color:var(--mut)}
+/* readme */
+.docs{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;align-items:start}
+.doc p{font-size:14.5px;line-height:1.65;color:var(--mut);margin-bottom:14px}
+.doc p b{color:var(--ink)}
+details{border-bottom:1px solid var(--line);padding:12px 2px}
+summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between}
+summary::after{content:"+";color:var(--blue);font-family:var(--mono)}
+details[open] summary::after{content:"−"}
+details p{font-size:14px;line-height:1.6;color:var(--mut);margin-top:8px}
+/* token */
+.tok{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:center}
+.tok .big{font-size:56px;font-weight:700;letter-spacing:.06em;color:var(--blue);text-shadow:0 0 30px rgba(58,215,255,.35)}
+footer{max-width:1240px;margin:70px auto 0;padding:20px 16px 40px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:1.6}
+/* modal + toast */
+.scrim{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:.2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.modal{position:fixed;left:50%;top:50%;z-index:61;width:min(420px,calc(100% - 24px));transform:translate(-50%,-46%);opacity:0;pointer-events:none;transition:.2s}
+.modal.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+.modal h3{font-size:20px;margin-bottom:6px}
+.modal p{font-size:13.5px;color:var(--mut);line-height:1.55;margin-bottom:12px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,16px);z-index:80;background:var(--p2);border:1px solid var(--line2);border-left:2px solid var(--amber);padding:10px 16px;font-family:var(--mono);font-size:13px;opacity:0;pointer-events:none;transition:.25s}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media (max-width:1100px){.floor{grid-template-columns:1fr 1fr}.floor .mapP{grid-column:1/-1;order:-1}.logs,.docs,.tok{grid-template-columns:1fr}}
+@media (max-width:720px){
+  .navl,.logo small{display:none}
+  .floor{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .console{left:10px;right:10px;width:auto;bottom:10px}
+  .console p{font-size:13px}
+  .cam{font-size:11.5px;top:86px}
+  .hero{min-height:760px}
+  .grid{gap:3px;padding:10px}
+  .cell span{font-size:8px}
+  .tok .big{font-size:40px}
+  .hidem{display:none}
+}
+
+/* ===== pixel mode ===== */
+canvas{image-rendering:pixelated;image-rendering:crisp-edges}
+*{border-radius:0!important}
+body{font-size:15px}
+.logo{font-family:var(--pix);font-weight:700;font-size:20px;letter-spacing:.12em}
+.logo small{font-size:15px}
+.console h1,.sh h2,.tok .big,.ihd b{font-family:var(--pix);font-weight:700;letter-spacing:0;line-height:1.1}
+.console h1{font-size:clamp(26px,3vw,38px)}
+.sh h2{font-size:clamp(22px,2.6vw,32px)}
+.eyebrow{font-family:var(--pix);font-size:11px;letter-spacing:.06em}
+.mono,.ph,.kv,table,.flips,.stat,.legend,.liq .ax,.hash,.bytes,.cam,.htip,.ticker,.toast,footer,.filt button,.chipb,.cell span,.cls{font-size:1.18em}
+.ph{font-size:17px}.kv{font-size:17px}table{font-size:17px}th{font-size:14px}.flips{font-size:16px}.stat{font-size:13px}.legend{font-size:14px}.ticker{font-size:16px}.cam{font-size:17px}.htip{font-size:15px}.hash{font-size:15px}.bytes small{font-size:11px}.bytes b{font-size:17px}.chipb{font-size:16px}.filt button{font-size:15px}.cell span{font-size:12px}.cls{font-size:13px}footer{font-size:15px}
+.stat b{font-family:var(--pix);font-size:18px}
+.panel{border:3px solid #2a3d49;box-shadow:6px 6px 0 #000,inset 0 0 0 2px #0a1116;background:#0c141a}
+.panel::before,.panel::after{border-radius:0;width:6px;height:6px;background:#3d5463;box-shadow:none}
+.ph{border-bottom:3px solid #1c2a33;background:#0f1a22}
+.ph .led{border-radius:0!important;box-shadow:none;width:10px;height:10px}
+.cta{font-family:var(--pix);font-weight:700;font-size:13px;letter-spacing:.02em;border:3px solid #000;box-shadow:inset -3px -3px 0 rgba(0,0,0,.35),inset 3px 3px 0 rgba(255,255,255,.35),4px 4px 0 #000;padding:9px 14px;transition:none}
+.cta:active{transform:translate(2px,2px);box-shadow:inset 3px 3px 0 rgba(0,0,0,.35),2px 2px 0 #000}
+.cta.gh{background:#16232c;color:var(--ink);border:3px solid #000}
+.chipb,.xb,.filt button{border:2px solid #2a3d49;box-shadow:3px 3px 0 #000}
+.stat,.hash,.bytes div,.liq .bar,#insC{border:2px solid #1c2a33;box-shadow:inset 2px 2px 0 #000}
+.cell{border:2px solid #22333e;transition:none}
+.cell:hover{transform:none;border-color:var(--ink)}
+.cell.run{box-shadow:0 0 0 2px var(--green),0 0 0 4px #000}
+.cell.sel{box-shadow:0 0 0 2px var(--amber)}
+.cell .mine{border-radius:0!important;box-shadow:none}
+nav.top{border-bottom:3px solid #1c2a33;backdrop-filter:none;background:#070c10}
+.ticker{border-bottom:3px solid #1c2a33;height:26px}
+.cam{border:2px solid #1c2a33;box-shadow:4px 4px 0 #000}
+.htip{border:2px solid #2a3d49;border-left:4px solid var(--blue);box-shadow:4px 4px 0 #000}
+.toast{border:2px solid #2a3d49;border-left:4px solid var(--amber);box-shadow:4px 4px 0 #000}
+.console p{font-size:16px}.doc p{font-size:16.5px}details p{font-size:16px}.sh p{font-size:17px}
+summary{font-family:var(--pix);font-size:13px;font-weight:400}
+.liq .bar i{min-height:3px}
+</style>
+</head>
+<body>
+
+
+<nav class="top">
+  <div class="logo"><svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="11" fill="none" stroke="#3ad7ff" stroke-width="2"/><circle cx="13" cy="13" r="4.5" fill="#3ad7ff"/><path d="M13 2v4M13 20v4M2 13h4M20 13h4" stroke="#ffb627" stroke-width="2"/></svg>CORES<small>100 cores · one pool · fees only</small></div>
+  <div class="navl"><a class="chipb" href="#floor">Cores</a><a class="chipb" href="#pulses">Market</a><a class="chipb" href="#docs">Docs</a><a class="chipb" href="#token">$CORES</a></div>
+  <span class="sp"></span>
+  <a class="xb" id="xLink" href="https://x.com/UseCores" target="_blank" rel="noopener" aria-label="CORES on X" title="@UseCores on X"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.75 3h3.07l-6.7 7.66L22 21h-6.17l-4.83-6.32L5.47 21H2.4l7.17-8.2L2 3h6.33l4.37 5.77L17.75 3Zm-1.08 16.2h1.7L7.42 4.7H5.6l11.07 14.5Z"/></svg></a>
+  <button class="cta" id="wBtn">Connect wallet</button>
+</nav>
+<div class="ticker"><div id="tk"></div></div>
+
+<header class="hero">
+  <canvas id="hall"></canvas>
+  <div class="cam"><b>●</b> REC · CAM 04 · CONTROL ROOM<br><span id="camT">—</span><br><span id="camR">—</span></div>
+  <div class="htip" id="htip"></div>
+  <div class="panel console">
+    <div class="ph"><span class="led"></span><span class="tt">cores.sys</span><span>· reactor hall 01 · night shift</span><span class="sp"></span><span class="tag">LIVE SIM</span></div>
+    <div class="pb">
+      <div class="eyebrow">ONE COIN · ONE POOL · 100 REACTOR CORES</div>
+      <h1>100 cores. One pool. <em>Fees only.</em></h1>
+      <p>The pool's liquidity is cut into 100 price bands, and each band belongs to one core. Whichever core the price is sitting in goes critical: every swap there pays it the fee. Nothing else ever pays a core.</p>
+      <div class="btns"><a class="cta" href="#floor">▶ Walk the floor</a><a class="cta gh" href="#docs">How it works</a><a class="cta amb" href="#token">$CORES</a></div>
+      <div class="stats"><div class="stat">CRITICAL<b id="sR">CR-38</b></div><div class="stat">PRICE / 1M<b class="bl" id="sP">0</b></div><div class="stat">PULSES RUN<b class="bl" id="sJ">0</b></div><div class="stat">FEE NOW<b id="sF">0%</b></div></div>
+    </div>
+  </div>
+</header>
+
+<section class="sec" id="floor">
+  <div class="sh"><div class="eyebrow">REACTOR FLOOR</div><h2>The floor. 100 cores, 100 bands.</h2><p>Core 00 holds the lowest band and core 99 the highest. The glowing core is the one the price is sitting in right now. Tap any core, here or in the hall above, to inspect it.</p></div>
+  <div class="floor">
+    <div class="panel"><div class="ph"><span class="led"></span><span class="tt">pool.ini</span></div><div class="pb kv" id="pool"></div></div>
+    <div class="panel mapP"><div class="ph"><span class="led"></span><span class="tt">floor_map.sys</span><span>· hall 01 · 10 × 10 cores</span></div>
+      <div class="filt" id="filt"><button class="on" data-f="all">all</button><button data-f="un">unminted</button><button data-f="ls">listed</button><button data-f="me">yours</button></div>
+      <div class="grid" id="grid"></div>
+      <div class="legend"><span><i style="border-color:var(--green);background:rgba(77,255,154,.3)"></i>critical (in range)</span><span><i style="border-color:var(--teal);background:rgba(31,181,166,.3)"></i>sol side</span><span><i style="border-color:#8a6516;background:rgba(255,182,39,.2)"></i>coin side</span><span><i style="border-color:var(--amber);background:var(--amber)"></i>listed</span><span><i style="border-color:var(--line2)"></i>unminted</span></div>
+      <div class="liq"><div class="bar" id="liq"></div><div class="ax"><span>LIQUIDITY · CR-00</span><span>CR-99</span></div></div>
+    </div>
+    <div class="panel"><div class="ph"><span class="led a"></span><span class="tt" id="insT">inspector</span></div><div class="pb" id="ins"></div></div>
+  </div>
+</section>
+
+<section class="sec" id="pulses">
+  <div class="sh"><div class="eyebrow">PULSES · SURGES</div><h2>The night shift, live.</h2><p>Every swap is a pulse for the critical core. Big swaps can trigger a surge that flips one bit of that core's spec.</p></div>
+  <div class="logs">
+    <div class="panel"><div class="ph"><span class="led"></span><span class="tt">pulses.log</span><span>· newest first</span><span class="sp"></span><span class="tag">SIMULATION</span></div><div class="tscroll"><table><thead><tr><th>TIME</th><th>SIDE</th><th>SOL</th><th>CORE</th><th class="hidem">FEE</th><th class="hidem">PULSE HASH</th></tr></thead><tbody id="jobs"></tbody></table></div></div>
+    <div class="panel"><div class="ph"><span class="led a"></span><span class="tt">surges.log</span><span>· surges are weather, not a lottery</span></div><div class="flips" id="flips"></div></div>
+  </div>
+</section>
+
+<section class="sec" id="docs">
+  <div class="sh"><div class="eyebrow">README.TXT</div><h2>What Cores is.</h2></div>
+  <div class="docs">
+    <div class="panel doc"><div class="ph"><span class="led"></span><span class="tt">readme.txt</span></div><div class="pb">
+      <p>Cores is <b>one coin, one pool and 100 reactor cores</b>. The pool's liquidity is cut into 100 price bands stacked end to end, and each band belongs to one core. When the price is inside a band, that core is critical: every swap there pays it the fee, and nothing else ever pays a core.</p>
+      <p>A core is an <b>NFT with three parts</b>. Eight bytes of spec written at mint from the last pulse hash, where byte 0 is the rod and sets the swap fee between 0.80% and 1.51%. An account of its own where SOL fees land and travel with it when it sells. And its band, whose coin fees are held in the coolant loop and compacted back into the band as locked liquidity.</p>
+      <p><b>Surges.</b> A swap over the surge threshold rolls one bit of the critical core's spec against its damper byte. A landed surge can raise or lower a fee, move a core across a class line, or only change how it glows.</p>
+      <p><b>Locked for good.</b> Mint payments, sale royalties and compacted coin stay in the pool. Nothing runs on a clock. If nobody trades, nothing moves.</p>
+    </div></div>
+    <div class="panel"><div class="ph"><span class="led a"></span><span class="tt">faq.txt</span></div><div class="pb">
+      <details open><summary>What is a core?</summary><p>An NFT that owns one of the pool's 100 price bands. It has an 8-byte spec, a SOL account of its own and its band.</p></details>
+      <details><summary>How does a core earn?</summary><p>Only while the price sits in its band. Every swap there pays its fee, set by its rod byte, into its own account.</p></details>
+      <details><summary>What is a surge?</summary><p>A big swap rolls one bit of the critical core's spec. The damper byte can catch it. If it lands, the core's fee, class or glow can change.</p></details>
+      <details><summary>What gets locked?</summary><p>Mint payments, sale royalties and compacted coin fees go back into the pool as liquidity and stay there.</p></details>
+      <details><summary>Is anything on a timer?</summary><p>No. Nothing happens unless someone trades.</p></details>
+      <details><summary>Is this live?</summary><p>Not yet. Prices, pulses, surges and mints on this page are a simulation until $CORES launches.</p></details>
+    </div></div>
+  </div>
+</section>
+
+<section class="sec" id="token">
+  <div class="sh"><div class="eyebrow">TOKEN</div><h2>$CORES</h2></div>
+  <div class="panel"><div class="ph"><span class="led"></span><span class="tt">token.inf</span><span>· Solana SPL token</span></div><div class="pb tok">
+    <div><div class="big">$CORES</div><p style="color:var(--mut);line-height:1.55;margin-top:6px">The one coin in the one pool. Every swap of $CORES is a pulse for whichever core is critical.</p></div>
+    <div class="btns" style="justify-content:flex-end"><button class="cta" disabled style="opacity:.55;cursor:default">Buy $CORES · at launch</button><button class="cta gh" disabled style="opacity:.55;cursor:default">Chart · at launch</button><a class="cta amb" id="xLink2" href="https://x.com/UseCores" target="_blank" rel="noopener">Follow on X</a></div>
+  </div></div>
+</section>
+
+<footer><span>CORES · $CORES · pre-launch. Prices, pulses, surges, mints and wallets on this page are a simulation. Memecoins and NFTs are extremely risky. Not financial advice.</span><span>Nothing runs on a clock.</span></footer>
+
+<div class="scrim" id="scrim"></div>
+<div class="panel modal" id="modal"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)],clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const pad=n=>String(n).padStart(2,'0'),cr=i=>'CR-'+pad(i),hex2=n=>n.toString(16).padStart(2,'0');
+const hash=()=>Array.from({length:32},()=>'0123456789abcdef'[Math.floor(Math.random()*16)]).join('');
+const fmt=(n,d=2)=>n.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const store={get(k,d){try{const v=localStorage.getItem('cores-'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('cores-'+k,JSON.stringify(v))}catch(e){}}};
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2600)}
+
+/* ---------- model ---------- */
+const P0=10,R=1.025,band=i=>[P0*Math.pow(R,i),P0*Math.pow(R,i+1)];
+const BN=['rod','flx','tmp','col','s0','s1','s2','s3'];
+const CLASSES=['STANDARD','BREEDER','FUSION','QUANTUM'];
+const cores=Array.from({length:100},(_,i)=>{const spec=Array.from({length:8},()=>Math.floor(Math.random()*256));return{i,spec,minted:Math.random()<.64,listed:false,mine:false,liq:rnd(.8,3.2),acct:rnd(0,.3),earned:rnd(0,1.4),compact:rnd(0,4e5),pulses:Math.floor(rnd(0,180)),surges:Math.floor(rnd(0,4)),price:0}});
+cores.forEach(c=>{if(!c.minted){c.acct=0;c.earned=0;c.surges=0}});cores[38].minted=true;cores.filter(c=>c.minted).sort(()=>Math.random()-.5).slice(0,9).forEach(c=>{c.listed=true;c.price=+rnd(.4,3).toFixed(2)});
+const feeOf=c=>.8+c.spec[0]/255*.71,classOf=c=>CLASSES[(c.spec[1]>>6)&3];
+let price=band(38)[0]*1.019,jobs=Math.floor(rnd(4200,5200)),flipsLanded=38,solEarned=62.9,solLocked=104.2,compacted=48.2e6,lastHash=hash();
+const mine=store.get('mine',[]);mine.forEach(i=>{if(cores[i]){cores[i].minted=true;cores[i].mine=true;cores[i].listed=false}});
+const active=()=>clamp(Math.floor(Math.log(price/P0)/Math.log(R)),0,99);
+let W=store.get('wallet',{on:false,sol:0});
+
+/* ---------- core drawing (generative from spec) ---------- */
+function drawCore(cv,c,big,t){const x=cv.getContext('2d'),dp=big?.42:.36,w=cv.clientWidth||60,h=cv.clientHeight||60;const tw=Math.max(8,Math.round(w*dp)),th=Math.max(8,Math.round(h*dp));if(cv.width!==tw){cv.width=tw;cv.height=th}x.setTransform(tw/w,0,0,th/h,0,0);x.clearRect(0,0,w,h);
+  const a=active(),run=c.i===a,side=c.i<a?'sol':'coin',s=c.spec;const hue=run?150:side==='sol'?178:40;const cxp=w/2,cyp=h*.52,R0=Math.min(w,h)*(big?.33:.32);
+  if(!c.minted){x.strokeStyle='rgba(134,163,179,.35)';x.setLineDash([3,3]);x.beginPath();x.arc(cxp,cyp,R0,0,6.283);x.stroke();x.setLineDash([]);return}
+  const g=x.createRadialGradient(cxp,cyp,0,cxp,cyp,R0*1.6);g.addColorStop(0,`hsla(${hue},100%,${run?65:50}%,${run?.55:.25})`);g.addColorStop(1,`hsla(${hue},100%,50%,0)`);x.fillStyle=g;x.fillRect(0,0,w,h);
+  const rings=2+(s[2]&3);for(let k=0;k<rings;k++){x.strokeStyle=`hsla(${hue},90%,${60-k*6}%,${.9-k*.15})`;x.lineWidth=big?2:1.2;x.beginPath();x.arc(cxp,cyp,R0*(1-k*.18),0,6.283);x.stroke()}
+  const rods=4+(s[0]>>5);for(let k=0;k<rods;k++){const an=k/rods*6.283+(t||0)*(run?.8:.15)+s[3]/40;x.strokeStyle=`hsla(${hue},100%,${run?75:58}%,.85)`;x.lineWidth=big?3:1.6;x.beginPath();x.moveTo(cxp+Math.cos(an)*R0*.25,cyp+Math.sin(an)*R0*.25);x.lineTo(cxp+Math.cos(an)*R0*.62,cyp+Math.sin(an)*R0*.62);x.stroke()}
+  x.fillStyle=`hsl(${hue},100%,${run?80:60}%)`;x.beginPath();x.arc(cxp,cyp,R0*(.12+(s[4]&7)/80),0,6.283);x.fill();
+  if(s[5]&1){x.fillStyle=`hsla(${(hue+180)%360},100%,60%,.8)`;for(let k=0;k<3;k++){const an=k*2.09+(t||0)*.4;x.beginPath();x.arc(cxp+Math.cos(an)*R0*.85,cyp+Math.sin(an)*R0*.85,big?3:1.5,0,6.283);x.fill()}}}
+
+/* ---------- floor grid ---------- */
+let sel=40,filt='all';
+function buildGrid(){$('#grid').innerHTML='';for(let r=9;r>=0;r--)for(let c=0;c<10;c++){const i=r*10+c;const d=document.createElement('div');d.className='cell';d.dataset.i=i;d.innerHTML=`<canvas></canvas><span>${pad(i)}</span>`;d.onclick=()=>select(i);$('#grid').appendChild(d)}}
+function renderGrid(t){const a=active();$$('#grid .cell').forEach(d=>{const i=+d.dataset.i,c=cores[i];d.className='cell'+(i===a?' run':'')+(i===sel?' sel':'')+(c.minted?'':' un');const on=filt==='all'||(filt==='un'&&!c.minted)||(filt==='ls'&&c.listed)||(filt==='me'&&c.mine);if(!on)d.classList.add('dim');
+  let f=d.querySelector('.flag');if(c.listed&&!f){f=document.createElement('div');f.className='flag';f.textContent='$';d.appendChild(f)}if(!c.listed&&f)f.remove();let m=d.querySelector('.mine');if(c.mine&&!m){m=document.createElement('div');m.className='mine';d.appendChild(m)}
+  drawCore(d.querySelector('canvas'),c,false,t)})}
+$$('#filt button').forEach(b=>b.onclick=()=>{$$('#filt button').forEach(x=>x.classList.remove('on'));b.classList.add('on');filt=b.dataset.f;if(filt==='me'&&!cores.some(c=>c.mine))toast(W.on?'You don\'t hold any cores yet. Mint an unminted one.':'Connect a wallet to see your cores.');renderGrid()});
+function renderLiq(){const a=active();$('#liq').innerHTML=cores.map(c=>`<i class="${c.i===a?'r':c.i>a?'c':''}" style="height:${(c.liq/3.4*100).toFixed(0)}%" title="${cr(c.i)}"></i>`).join('')}
+function renderPool(){const a=active(),b=band(a),pos=(price-b[0])/(b[1]-b[0]);const held=cores.filter(c=>c.mine);
+  $('#pool').innerHTML=`<h4>POOL</h4><div><span>price / 1m coin</span><span>${fmt(price,3)} SOL</span></div><div><span>band in range</span><span style="color:var(--green)">${cr(a)}</span></div><div><span>position in band</span><span>${Math.round(pos*100)}%</span></div><div><span>fee now</span><span>${fmt(feeOf(cores[a]))}%</span></div><div><span>market cap</span><span>${Math.round(price*1000).toLocaleString()} SOL</span></div><div><span>pulses run</span><span>${jobs.toLocaleString()}</span></div><div><span>surges landed</span><span>${flipsLanded}</span></div><div><span>cores minted</span><span>${cores.filter(c=>c.minted).length} / 100</span></div><div><span>sol earned, all</span><span>${fmt(solEarned)}</span></div><div><span>sol locked</span><span>${fmt(solLocked)}</span></div><div><span>coin compacted</span><span>${(compacted/1e6).toFixed(2)}M</span></div>
+  <h4>WALLET</h4><div><span>cores held</span><span>${held.length}</span></div><div><span>account sol</span><span>${W.on?fmt(held.reduce((s,c)=>s+c.acct,0),4):'—'}</span></div>${W.on?'':'<p style="color:var(--dim);margin-top:6px">connect a wallet to fill these.</p>'}
+  <h4>LAST PULSE HASH</h4><div class="hash">${lastHash}</div>`}
+function select(i){sel=i;renderIns(true);renderGrid();if(innerWidth<1100)$('#ins').scrollIntoView({behavior:'smooth',block:'center'})}
+function renderIns(full,flipByte){const c=cores[sel],a=active(),b=band(sel);const status=sel===a?'critical':sel<a?'sol side':'coin side';$('#insT').textContent='inspector · '+cr(sel);
+  if(full||!$('#insC')){$('#ins').innerHTML=`<canvas id="insC"></canvas><div class="ihd"><b>${cr(sel)}</b><span class="cls">${c.minted?classOf(c):'UNMINTED'}</span></div><div class="bytes">${c.spec.map((v,k)=>`<div data-b="${k}"><small>${BN[k]}</small><b>${hex2(v)}</b></div>`).join('')}</div><div class="kv" id="insKV"></div><div class="ibtns" id="insB"></div>`}
+  else $$('.bytes div').forEach((d,k)=>{d.querySelector('b').textContent=hex2(c.spec[k])});
+  if(flipByte!==undefined){const d=$(`.bytes div[data-b="${flipByte}"]`);if(d){d.classList.remove('flip');void d.offsetWidth;d.classList.add('flip')}$('.cls').textContent=c.minted?classOf(c):'UNMINTED'}
+  $('#insKV').innerHTML=`<div><span>rod → swap fee</span><span>${fmt(feeOf(c))}%</span></div><div><span>status</span><span style="color:${status==='critical'?'var(--green)':'inherit'}">${status}</span></div><div><span>band price / 1m</span><span>${fmt(b[0],3)}–${fmt(b[1],3)}</span></div><div><span>liquidity</span><span>${fmt(c.liq)} SOL</span></div><div><span>account sol</span><span>${fmt(c.acct,4)} SOL</span></div><div><span>earned, lifetime</span><span>${fmt(c.earned,4)} SOL</span></div><div><span>compacted, lifetime</span><span>${(c.compact/1e3).toFixed(1)}K</span></div><div><span>pulses in band</span><span>${c.pulses}</span></div><div><span>surges taken</span><span>${c.surges}</span></div>${c.listed?`<div><span>listed at</span><span style="color:var(--amber)">${c.price} SOL</span></div>`:''}${c.mine?`<div><span>owner</span><span style="color:var(--blue)">you</span></div>`:''}`;
+  const tracked=store.get('track',[]).includes(sel);
+  $('#insB').innerHTML=!c.minted?`<button class="cta" data-act="mint">Mint · 0.5 SOL</button><button class="cta gh" data-act="track">${tracked?'Tracking ✓':'Track'}</button>`:c.mine?`<button class="cta amb" data-act="list">${c.listed?'Unlist':'List for sale'}</button><button class="cta gh" data-act="track">${tracked?'Tracking ✓':'Track'}</button>`:`<button class="cta" data-act="${c.listed?'buy':'offer'}">${c.listed?'Buy · '+c.price+' SOL':'Make offer'}</button><button class="cta gh" data-act="track">${tracked?'Tracking ✓':'Track'}</button>`;
+  $$('#insB [data-act]').forEach(b=>b.onclick=()=>act(b.dataset.act))}
+function act(k){const c=cores[sel];if(k==='track'){const L=store.get('track',[]);const i=L.indexOf(sel);i>=0?L.splice(i,1):L.push(sel);store.set('track',L);toast(i>=0?'Stopped tracking '+cr(sel):'Tracking '+cr(sel)+'. You\'ll get a toast when it goes critical or surges.');return renderIns(true)}
+  if(!W.on)return connect(()=>act(k));
+  if(k==='mint'){if(W.sol<.5)return toast('Not enough play SOL');W.sol-=.5;c.minted=true;c.mine=true;c.spec=Array.from({length:8},(_,j)=>parseInt(lastHash.slice(j*2,j*2+2),16));solLocked+=.5;saveMine();toast(`Minted ${cr(sel)} from the last pulse hash. Class: ${classOf(c)}.`)}
+  else if(k==='buy'){if(W.sol<c.price)return toast('Not enough play SOL');W.sol-=c.price;c.listed=false;c.mine=true;solLocked+=c.price*.05;saveMine();toast(`You bought ${cr(sel)}. Its account (${fmt(c.acct,4)} SOL) came with it.`)}
+  else if(k==='offer'){toast(`Offer sent to the owner of ${cr(sel)} (demo).`)}
+  else if(k==='list'){c.listed=!c.listed;c.price=c.price||+rnd(.6,2.4).toFixed(2);toast(c.listed?`${cr(sel)} listed at ${c.price} SOL`:`${cr(sel)} unlisted`)}
+  saveW();renderAll(true)}
+function saveMine(){store.set('mine',cores.filter(c=>c.mine).map(c=>c.i))}
+function saveW(){store.set('wallet',W)}
+
+/* ---------- wallet ---------- */
+function renderW(){$('#wBtn').textContent=W.on?`${fmt(W.sol,2)} SOL · play`:'Connect wallet'}
+function connect(after){openModal(`<div class="ph"><span class="led"></span><span class="tt">wallet.sys</span></div><div class="pb"><h3>Connect a wallet</h3><p>Cores is pre-launch. Connecting gives you a play wallet with 10 SOL so you can mint, buy and list cores in the simulation. No real wallet is touched.</p><button class="cta" style="width:100%" id="cw">Use play wallet</button></div>`);$('#cw').onclick=()=>{W={on:true,sol:10};saveW();renderW();closeModal();toast('Play wallet connected · 10 SOL');renderAll(true);after&&after()}}
+$('#wBtn').onclick=()=>{if(!W.on)return connect();openModal(`<div class="ph"><span class="led"></span><span class="tt">wallet.sys</span></div><div class="pb"><h3>Play wallet</h3><p>${fmt(W.sol,3)} SOL · ${cores.filter(c=>c.mine).length} cores held</p><div class="btns"><button class="cta gh" id="top">+5 play SOL</button><button class="cta gh" id="dc">Disconnect</button></div></div>`);$('#top').onclick=()=>{W.sol+=5;saveW();renderW();closeModal()};$('#dc').onclick=()=>{W={on:false,sol:0};saveW();renderW();closeModal();renderAll(true)}};
+function openModal(h){$('#modal').innerHTML=h;$('#modal').classList.add('on');$('#scrim').classList.add('on')}
+function closeModal(){$('#modal').classList.remove('on');$('#scrim').classList.remove('on')}
+$('#scrim').onclick=closeModal;addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+/* ---------- market sim ---------- */
+let jobRows=[],flipRows=[],lastActive=active();
+function swap(){const side=Math.random()<.55?'BUY':'SELL';const r=Math.random();const sol=r<.7?rnd(.01,.8):r<.93?rnd(.8,3):rnd(3,8);const a=active(),c=cores[a],fee=sol*feeOf(c)/100;
+  price*=1+(side==='BUY'?1:-1)*sol*.0035;price=clamp(price,band(2)[0],band(97)[1]);jobs++;c.pulses++;c.acct+=fee*.6;c.earned+=fee*.6;c.compact+=fee*4e4;solEarned+=fee*.6;compacted+=fee*4e4;lastHash=hash();
+  jobRows.unshift({t:new Date(),side,sol,core:a,fee,h:lastHash,id:Math.random()});jobRows=jobRows.slice(0,40);
+  if(sol>2){const k=Math.floor(rnd(0,8)),bit=Math.floor(rnd(0,8));const caught=Math.random()<.5;if(!caught){c.spec[k]^=(1<<bit);c.surges++;flipsLanded++}flipRows.unshift({t:new Date(),caught,core:a,k,bit,id:Math.random()});flipRows=flipRows.slice(0,30);if(sel===a)renderIns(false,caught?undefined:k);const tr=store.get('track',[]);if(!caught&&tr.includes(a))toast(`Surge landed on ${cr(a)} · ${BN[k]} bit ${bit}`)}
+  const na=active();if(na!==lastActive){const tr=store.get('track',[]);if(tr.includes(na))toast(`${cr(na)} just went critical`);lastActive=na;renderLiq()}
+  renderJobs(true);renderFlips();renderPool();renderStats();if(sel===a||sel===na)renderIns(false);
+  setTimeout(swap,rnd(2500,6500)*(document.hidden?4:1))}
+function tm(d){return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())}
+let jobSeen=null;function renderJobs(){$('#jobs').innerHTML=jobRows.map((j,k)=>`<tr class="${k===0&&jobSeen!==j.id?'nw':''}"><td>${tm(j.t)}</td><td class="${j.side==='BUY'?'buy':'sell'}">${j.side}</td><td>${j.sol.toFixed(3)}</td><td>${cr(j.core)}</td><td class="hidem">${j.fee.toFixed(5)}</td><td class="hidem" style="color:var(--dim)">${j.h.slice(0,12)}…</td></tr>`).join('');jobSeen=jobRows[0]&&jobRows[0].id}
+function renderFlips(){$('#flips').innerHTML=flipRows.map(f=>`<div><span style="color:var(--dim)">${tm(f.t)}</span> <span class="${f.caught?'c':'l'}">${f.caught?'DAMPER caught it':'SURGE LANDED'}</span> ${cr(f.core)} · ${BN[f.k]} bit ${f.bit} · ${f.caught?'no change':'glow changed'}</div>`).join('')||'<div class="c">no surges yet</div>'}
+function renderStats(){const a=active();$('#sR').textContent=cr(a);$('#sP').textContent=fmt(price,3);$('#sJ').textContent=jobs.toLocaleString();$('#sF').textContent=fmt(feeOf(cores[a]))+'%';$('#camR').textContent=`critical: ${cr(a)} · ${cores.filter(c=>c.minted).length} cores minted`;
+  $('#tk').innerHTML=(`<span>NOTHING RUNS ON A CLOCK</span><span><b>■</b> CRITICAL ${cr(a)}</span><span>PRICE/1M ${fmt(price,3)} SOL</span><span><b>■</b> FEE ${fmt(feeOf(cores[a]))}%</span><span>IF NOBODY TRADES, NOTHING MOVES</span><span><b>■</b> ${flipsLanded} SURGES LANDED</span><span>SAMPLE FEED UNTIL $CORES LAUNCHES</span>`).repeat(2)}
+function renderAll(full){renderPool();renderGrid();renderLiq();renderIns(full);renderStats();renderW()}
+
+/* ---------- reactor hall (isometric canvas) ---------- */
+const hv=$('#hall'),hx=hv.getContext('2d');let HW,HH,hdp,mx=.5,my=.5,smx=.5,smy=.5,hoverI=-1,parts=[];
+const PX=3;function hsize(){HW=hv.clientWidth;HH=hv.clientHeight;hv.width=Math.ceil(HW/PX);hv.height=Math.ceil(HH/PX);hx.setTransform(1/PX,0,0,1/PX,0,0);hx.imageSmoothingEnabled=false}
+addEventListener('resize',hsize);
+let scr=[];for(let i=0;i<12;i++)scr.push({k:i%4,seed:Math.random()*10});
+function iso(){const narrow=HW<720;const tw=Math.min(narrow?HW/11:HW/16,92),th=tw*.52;const ox=narrow?HW/2:HW*.62+(smx-.5)*-30,oy=(narrow?HH*.16:HH*.30)+(smy-.5)*-16;return{tw,th,ox,oy}}
+function corePos(i,g){const r=Math.floor(i/10),c=i%10;return{x:g.ox+(c-r)*g.tw/2,y:g.oy+(c+r)*g.th/2}}
+function hallFrame(now){requestAnimationFrame(hallFrame);const t=now/1000;smx+=(mx-smx)*.06;smy+=(my-smy)*.06;const g=iso(),a=active();
+  let gr=hx.createLinearGradient(0,0,0,HH);gr.addColorStop(0,'#071018');gr.addColorStop(.55,'#0a141c');gr.addColorStop(1,'#04070a');hx.fillStyle=gr;hx.fillRect(0,0,HW,HH);
+  // back wall monitors
+  const mw=Math.min(132,HW/10),mh=mw*.55,mx0=HW*.42-mw*2.6+(smx-.5)*-12;for(let k=0;k<10;k++){const col=k%5,row=Math.floor(k/5);const x=mx0+col*(mw+12),y=80+row*(mh+12)+(smy-.5)*-6;if(x>HW)continue;hx.fillStyle='#0d1a22';hx.fillRect(x-3,y-3,mw+6,mh+6);hx.fillStyle='#03080b';hx.fillRect(x,y,mw,mh);const s=scr[k];hx.strokeStyle=k%3===0?'#4dff9a':k%3===1?'#3ad7ff':'#ffb627';hx.lineWidth=1.3;hx.beginPath();
+    if(s.k===0){for(let q=0;q<=30;q++){const xx=x+4+q/30*(mw-8),yy=y+mh*.6+Math.sin(q*.5+t*2+s.seed)*mh*.18+Math.sin(q*1.7+s.seed)*mh*.08;q?hx.lineTo(xx,yy):hx.moveTo(xx,yy)}hx.stroke()}
+    else if(s.k===1){for(let q=0;q<10;q++){const hh=(Math.sin(q+t*1.5+s.seed)*.5+.5)*mh*.6;hx.fillStyle=hx.strokeStyle;hx.fillRect(x+6+q*(mw-12)/10,y+mh-6-hh,(mw-12)/10-2,hh)}}
+    else if(s.k===2){hx.arc(x+mw/2,y+mh/2,mh*.3,0,6.283);hx.stroke();hx.beginPath();hx.moveTo(x+mw/2,y+mh/2);hx.lineTo(x+mw/2+Math.cos(t*2+s.seed)*mh*.3,y+mh/2+Math.sin(t*2+s.seed)*mh*.3);hx.stroke()}
+    else{hx.fillStyle=hx.strokeStyle;hx.font=`${Math.max(14,mh*.26)}px VT323,monospace`;hx.fillText(k===3?'CRIT '+cr(a):k===7?fmt(price,3):k===9?'FEE '+fmt(feeOf(cores[a]))+'%':'PULSE '+(jobs%1000),x+6,y+mh*.6)}
+    hx.fillStyle='rgba(255,255,255,.03)';for(let yy=y;yy<y+mh;yy+=3)hx.fillRect(x,yy,mw,1)}
+  // floor grid diamond
+  const corners=[corePos(0,g),corePos(9,g),corePos(99,g),corePos(90,g)];hx.fillStyle='rgba(58,215,255,.035)';hx.strokeStyle='rgba(58,215,255,.18)';hx.lineWidth=1;hx.beginPath();hx.moveTo(corners[0].x,corners[0].y+g.th);hx.lineTo(corners[1].x+g.tw*.7,corners[1].y+g.th*.5);hx.lineTo(corners[2].x,corners[2].y);hx.lineTo(corners[3].x-g.tw*.7,corners[3].y+g.th*.5);hx.closePath();hx.fill();
+  // coolant pipes glow lines
+  hx.strokeStyle='rgba(31,181,166,.12)';for(let r=0;r<10;r++){const p0=corePos(r*10,g),p1=corePos(r*10+9,g);hx.beginPath();hx.moveTo(p0.x,p0.y+g.th*.4);hx.lineTo(p1.x,p1.y+g.th*.4);hx.stroke()}
+  // cores back-to-front
+  const order=[];for(let i=0;i<100;i++)order.push(i);order.sort((p,q)=>(Math.floor(p/10)+p%10)-(Math.floor(q/10)+q%10));
+  for(const i of order){const c=cores[i],p=corePos(i,g),run=i===a,side=i<a?'sol':'coin';const rw=g.tw*.32,rh=g.th*.32,ht=g.tw*(run?.55:.38)*(c.minted?1:.6);
+    const base=run?[77,255,154]:side==='sol'?[31,181,166]:[255,182,39];const al=c.minted?(run?1:.55):.2;const hov=i===hoverI;
+    // body
+    const bg=hx.createLinearGradient(p.x-rw,0,p.x+rw,0);bg.addColorStop(0,`rgba(${base.map(v=>v*.25|0)},${al})`);bg.addColorStop(.5,`rgba(${base.map(v=>v*.55|0)},${al})`);bg.addColorStop(1,`rgba(${base.map(v=>v*.18|0)},${al})`);hx.fillStyle=bg;hx.beginPath();hx.ellipse(p.x,p.y,rw,rh,0,0,Math.PI);hx.lineTo(p.x-rw,p.y-ht);hx.ellipse(p.x,p.y-ht,rw,rh,0,Math.PI,0,true);hx.closePath();hx.fill();
+    // top
+    hx.fillStyle=`rgba(${base},${run?.95:al*.9})`;hx.beginPath();hx.ellipse(p.x,p.y-ht,rw,rh,0,0,6.283);hx.fill();hx.fillStyle=`rgba(4,8,11,${run?.3:.55})`;hx.beginPath();hx.ellipse(p.x,p.y-ht,rw*.55,rh*.55,0,0,6.283);hx.fill();
+    // bands on body
+    if(c.minted){hx.strokeStyle=`rgba(${base},${al*.6})`;hx.lineWidth=1;for(let k=1;k<3;k++){hx.beginPath();hx.ellipse(p.x,p.y-ht*k/3,rw,rh,0,0,Math.PI);hx.stroke()}}
+    if(c.listed){hx.fillStyle='#ffb627';hx.fillRect(p.x+rw*.6,p.y-ht-rh-8,2,8);hx.fillRect(p.x+rw*.6,p.y-ht-rh-8,6,4)}
+    if(c.mine){hx.strokeStyle='#3ad7ff';hx.lineWidth=1.5;hx.beginPath();hx.ellipse(p.x,p.y+2,rw*1.35,rh*1.35,0,0,6.283);hx.stroke()}
+    if(hov){hx.strokeStyle='#fff';hx.lineWidth=1.5;hx.beginPath();hx.ellipse(p.x,p.y-ht,rw*1.25,rh*1.25,0,0,6.283);hx.stroke()}
+    if(run){// beam
+      const bm=hx.createLinearGradient(0,p.y-ht,0,p.y-ht-HH*.5);bm.addColorStop(0,'rgba(120,255,190,.55)');bm.addColorStop(1,'rgba(120,255,190,0)');hx.fillStyle=bm;hx.beginPath();hx.moveTo(p.x-rw*.5,p.y-ht);hx.lineTo(p.x-rw*.15,p.y-ht-HH*.5);hx.lineTo(p.x+rw*.15,p.y-ht-HH*.5);hx.lineTo(p.x+rw*.5,p.y-ht);hx.fill();
+      const gl=hx.createRadialGradient(p.x,p.y-ht/2,0,p.x,p.y-ht/2,g.tw*1.4);gl.addColorStop(0,`rgba(77,255,154,${.28+Math.sin(t*4)*.08})`);gl.addColorStop(1,'rgba(77,255,154,0)');hx.fillStyle=gl;hx.fillRect(p.x-g.tw*1.5,p.y-ht/2-g.tw*1.5,g.tw*3,g.tw*3);
+      if(Math.random()<.5)parts.push({x:p.x+rnd(-rw*.4,rw*.4),y:p.y-ht,vy:-rnd(.4,1.4),l:1,c:'120,255,190'});
+      hx.fillStyle='#d8f2ff';hx.font='700 14px Silkscreen,monospace';hx.textAlign='center';hx.fillText(cr(i)+' · CRITICAL',p.x,p.y-ht-rh-10);hx.textAlign='left'}}
+  // steam/particles
+  if(Math.random()<.3){const i=Math.floor(rnd(0,100)),p=corePos(i,g);if(cores[i].minted)parts.push({x:p.x,y:p.y-g.tw*.4,vy:-rnd(.2,.6),l:.6,c:'160,200,220'})}
+  parts=parts.filter(q=>{q.y+=q.vy;q.x+=Math.sin(q.y*.05)*.2;q.l-=.008;if(q.l<=0)return false;hx.fillStyle=`rgba(${q.c},${q.l*.6})`;hx.fillRect(q.x,q.y,2,2);return true});
+  // scanline + vignette
+  hx.fillStyle='rgba(0,0,0,.08)';for(let y=(t*30)%4;y<HH;y+=4)hx.fillRect(0,y,HW,1);
+  const v=hx.createRadialGradient(HW*.6,HH*.45,HH*.2,HW*.6,HH*.45,Math.max(HW,HH)*.8);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.6)');hx.fillStyle=v;hx.fillRect(0,0,HW,HH);
+  if(now-lastGrid>160){lastGrid=now;renderGrid(t);const ic=$('#insC');if(ic)drawCore(ic,cores[sel],true,t)}}
+let lastGrid=0;
+function hit(x,y){const g=iso();let best=-1,bd=1e9;for(let i=0;i<100;i++){const p=corePos(i,g),d=Math.hypot(x-p.x,(y-(p.y-g.tw*.2))*1.6);if(d<g.tw*.4&&d<bd){bd=d;best=i}}return best}
+hv.addEventListener('pointermove',e=>{const r=hv.getBoundingClientRect();mx=(e.clientX-r.left)/r.width;my=(e.clientY-r.top)/r.height;hoverI=hit(e.clientX-r.left,e.clientY-r.top);const tip=$('#htip');if(hoverI>=0){const c=cores[hoverI],a=active();tip.innerHTML=`<b>${cr(hoverI)}</b><div><span>status</span><span>${hoverI===a?'critical':hoverI<a?'sol side':'coin side'}</span></div><div><span>fee</span><span>${fmt(feeOf(c))}%</span></div><div><span>${c.minted?'earned':'state'}</span><span>${c.minted?fmt(c.earned,3)+' SOL':'unminted'}</span></div>`;tip.style.left=(e.clientX-r.left+16)+'px';tip.style.top=(e.clientY-r.top+16)+'px';tip.classList.add('on');hv.style.cursor='pointer'}else{tip.classList.remove('on');hv.style.cursor='crosshair'}});
+hv.addEventListener('pointerleave',()=>{hoverI=-1;$('#htip').classList.remove('on')});
+hv.addEventListener('click',()=>{if(hoverI>=0){select(hoverI);$('#floor').scrollIntoView({behavior:'smooth'})}});
+
+/* ---------- misc ---------- */
+setInterval(()=>{const d=new Date();$('#camT').textContent=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+tm(d)},1000);
+['#xLink','#xLink2'].forEach(s=>$(s).addEventListener('click',e=>{if($(s).getAttribute('href')==='#'){e.preventDefault();toast('X link coming soon')}}));
+
+/* ---------- boot ---------- */
+for(let k=0;k<14;k++){const a=active();const side=Math.random()<.55?'BUY':'SELL',sol=rnd(.02,3),c=cores[a];jobRows.push({t:new Date(Date.now()-k*6000),side,sol,core:a,fee:sol*feeOf(c)/100,h:hash(),id:Math.random()})}
+for(let k=0;k<4;k++){const c=Math.random()<.5;flipRows.push({t:new Date(Date.now()-k*4000),caught:c,core:active()+Math.floor(rnd(-1,2)),k:Math.floor(rnd(0,8)),bit:Math.floor(rnd(0,8)),id:Math.random()})}
+hsize();buildGrid();renderAll(true);renderJobs();renderFlips();requestAnimationFrame(hallFrame);setTimeout(swap,2000);
+</script>
+
+</body>
+</html>
